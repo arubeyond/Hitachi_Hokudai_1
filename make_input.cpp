@@ -39,7 +39,7 @@ const char ENDL = '\n';
 //cout << fixed << setprecision(17) << res << endl;
 const ll MOD = 998244353;
 
-bool debug = true;
+bool debug = false;
 
 const ll T = 10000;
 const ll MAX_V = 400;
@@ -76,14 +76,8 @@ void MAKE_TREE(int V, int E, vvii &edge, vector<pdd> coo, vector<int> col)
 {
     auto startClock = system_clock::now();
     double time;
-    if (debug)
-    {
-        time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
-        cout << "func make_tree is started at"
-             << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
-             << ENDL;
-    }
     vector<vector<int>> used(V, vector<int>(V, 1));
+    rep(i, V) used[i][i] = 0;
     //最小全域木を作る
     vector<int> connect(V, 0);
     multimap<ld, pair<int, int>> near_edge;
@@ -130,22 +124,26 @@ void MAKE_TREE(int V, int E, vvii &edge, vector<pdd> coo, vector<int> col)
         degree[edge[i][0]]++;
         degree[edge[i][1]]++;
     }
-    repf(i, V - 1, E)
+    multimap<ld, pair<int, int>> cost;
+    map<pair<int, int>, ld> cost_inv;
+    //init
+    rep(u, V - 1)
     {
-        multimap<ld, pair<int, int>> cost;
-        rep(u, V - 1)
+        repf(v, u + 1, V)
         {
-            repf(v, u + 1, V)
+            if (used[u][v])
             {
-                if (used[u][v])
-                {
-                    int f = 1 + 4 * (col[u] == col[v]);
-                    int g = (1 + MAX_DIST * (degree[u] >= MAX_Degree)) * (1 + MAX_DIST * (degree[v] >= MAX_Degree));
-                    cost.insert(mp(calc_dist(coo[u], coo[v]) * degree[u] * degree[v] * f * g, mp(u, v)));
-                }
+                int f = 1 + 4 * (col[u] == col[v]);
+                int g = (1 + MAX_DIST * (degree[u] >= MAX_Degree)) * (1 + MAX_DIST * (degree[v] >= MAX_Degree));
+                ld w = calc_dist(coo[u], coo[v]) * degree[u] * degree[v] * f * g;
+                cost.insert(mp(w, mp(u, v)));
+                cost_inv.insert(mp(mp(u, v), w));
             }
         }
+    }
 
+    repf(i, V - 1, E)
+    {
         ld w = (*cost.begin()).F;
         int u = (*cost.begin()).S.F;
         int v = (*cost.begin()).S.S;
@@ -154,15 +152,51 @@ void MAKE_TREE(int V, int E, vvii &edge, vector<pdd> coo, vector<int> col)
         edge[i][2] = (int)ceil(4 * w);
         used[u][v] = 0;
         used[v][u] = 0;
+        cost_inv.erase(mp(u, v));
+        cost.erase(w);
+        rep(x, u)
+        {
+            if (used[x][u])
+            {
+                w = cost_inv[mp(x, u)];
+                w *= (ld)(degree[u] + 1.0) / (ld)(degree[u]) * (ld)(1 + MAX_DIST * (degree[u] + 1 == MAX_Degree));
+                cost.insert(mp(w, mp(x, u)));
+                cost_inv[mp(x, u)] = w;
+            }
+        }
+        repf(x, u + 1, V)
+        {
+            if (used[u][x])
+            {
+                w = cost_inv[mp(u, x)];
+                w *= (ld)(degree[u] + 1.0) / (ld)(degree[u]) * (ld)(1 + MAX_DIST * (degree[u] + 1 == MAX_Degree));
+                if (debug)
+                    cost.insert(mp(w, mp(u, x)));
+                cost_inv[mp(u, x)] = w;
+            }
+        }
+        rep(x, v)
+        {
+            if (used[x][v])
+            {
+                w = cost_inv[mp(x, v)];
+                w *= (ld)(degree[v] + 1.0) / (ld)(degree[v]) * (ld)(1 + MAX_DIST * (degree[v] + 1 == MAX_Degree));
+                cost.insert(mp(w, mp(x, v)));
+                cost_inv[mp(x, v)] = w;
+            }
+        }
+        repf(x, v + 1, V)
+        {
+            if (used[v][x])
+            {
+                w = cost_inv[mp(v, x)];
+                w *= (ld)(degree[v] + 1.0) / (ld)(degree[v]) * (ld)(1 + MAX_DIST * (degree[v] + 1 == MAX_Degree));
+                cost.insert(mp(w, mp(v, x)));
+                cost_inv[mp(v, x)] = w;
+            }
+        }
         degree[u]++;
         degree[v]++;
-    }
-    if (debug)
-    {
-        time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
-        cout << "func make_tree is end at"
-             << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
-             << ENDL;
     }
 }
 
@@ -173,13 +207,14 @@ void make(string path, string problem)
     if (debug)
     {
         time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
-        cout << "func make is started at" 
-            << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6 
-            << ENDL;
+        cout << "func make is started at"
+             << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
+             << ENDL;
     }
+
+    //init : V,E,Rの決定
     int V, E;
     int R = 0;
-    //V,E,Rの決定
     V = MIN_V + randxor() % (MAX_V - MIN_V);
     E = 3 * V / 2 + randxor() % (V / 2);
     vector<vector<int>> edge(E, vector<int>(3, 0));
@@ -193,7 +228,6 @@ void make(string path, string problem)
         }
     }
     int r = V - (R * R);
-
     if (debug)
     {
         const double time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
@@ -208,11 +242,6 @@ void make(string path, string problem)
     rep(i, V) leave.insert(i);
     vector<pair<ld, ld>> coo(V);
     vector<int> col(V);
-    if (debug){
-        const double time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
-        cout << "coordinate is started at"
-         << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
-         << ENDL;}
     rep(x, R)
     {
         rep(y, R)
@@ -239,26 +268,18 @@ void make(string path, string problem)
              << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
              << ENDL;
     }
-    if (debug){
+
+    //グラフ生成
+    MAKE_TREE(V, E, edge, coo, col);
+    if (debug)
+    {
         time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
-        cout << "func make_tree is started at"
+        cout << "func make_tree is end at"
              << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
              << ENDL;
     }
-    MAKE_TREE(V, E, edge, coo, col);
-    if (debug){
-        time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
 
-    cout << "func make_tree is end at"
-         << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
-         << ENDL;}
     //注文頻度、注文を作る
-    if (debug){
-        time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
-
-    cout << "order making is started at"
-         << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
-         << ENDL;}
     vector<int> freq(V, 1);
     freq[0] = 0;
     pair<ld, ld> cent;
@@ -285,24 +306,21 @@ void make(string path, string problem)
                 Ord[t] = (upper_bound(all(freq), randxor() % ((ll)freq[V - 1])) - freq.begin());
         }
     }
-    if (debug){time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
-    
+    if (debug)
+    {
+        time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
+
         cout << "order making is end at"
              << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
              << ENDL;
-        }
-    //csvへの書き込み
-        if (debug){
-            time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
+    }
 
-        cout << "writing csv is started at"
-             << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
-             << ENDL;}
+    //csvへの書き込み
     ofstream ofs(path);
     if (problem == "A")
     {
         ofs << V << "," << E << endl;
-        rep(i, E) ofs << edge[i][0] - 1 << "," << edge[i][1] - 1 << "," << edge[i][2] << endl;
+        rep(i, E) ofs << edge[i][0] + 1 << "," << edge[i][1] + 1 << "," << edge[i][2] << endl;
         ofs << T << endl;
         int ord_id = 1;
         rep(t, T)
@@ -310,14 +328,31 @@ void make(string path, string problem)
             ofs << (Ord[t] >= 0) << endl;
             if (Ord[t] >= 0)
             {
-                ofs << ord_id << "," << Ord[t] + 1;
+                ofs << ord_id << "," << Ord[t] + 1 << endl;
                 ord_id++;
             }
         }
     }
     else if (problem == "B")
     {
+        ofs << V << "," << E << endl;
+        rep(i, E) ofs << edge[i][0] + 1 << "," << edge[i][1] + 1 << "," << edge[i][2] << endl;
+        ofs << freq[0] << ",";
+        repf(i,1, V-1) ofs << freq[i]-freq[i-1] << ",";
+        ofs << freq[V - 1] - freq[V - 2] << endl;
+        ofs << T << endl;
+        int ord_id = 1;
+        rep(t, T)
+        {
+            ofs << (Ord[t] >= 0) << endl;
+            if (Ord[t] >= 0)
+            {
+                ofs << ord_id << "," << Ord[t] + 1 << endl;
+                ord_id++;
+            }
+        }
     }
+    ofs.close();
     if (debug)
     {
         time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
@@ -326,31 +361,46 @@ void make(string path, string problem)
              << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
              << ENDL;
     }
-    ofs.close();
 }
 
-/*auto startClock = system_clock::now();
-
-const double time = duration_cast<microseconds>
-		(system_clock::now() - startClock).count() * 1e-6
-
-system_clock::now() が現在のクロック
-差.count()　でクロック数
-duration_cast<microseconds>　がマイクロ秒で変換
-*/
+string int_to_string(int i)
+{
+    if (i == 0)
+        return "00";
+    vector<char> moji;
+    while (i > 0)
+    {
+        moji.push_back((char)(i % 10 + (int)'0'));
+        i /= 10;
+    }
+    string ans = "";
+    repr(s, moji.size() - 1, -1) ans += moji[s];
+    if (ans.size() < 2)
+        return "0" + ans;
+    return ans;
+}
 
 int main()
 {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
-    const string path = "input_";
-    int n = 1;
-    string problem = "A";
-    rep(i, n)
+
+    auto startClock = system_clock::now();
+    const string path = "./HH_1/test_B/input_";
+    int a, b;
+    a = 0;
+    b = 15;
+    string problem = "B";
+    repf(i, a, b)
     {
-        string path_in = path + (char)(i+'0') + ".csv";
+        string path_in = path + int_to_string(i) + ".csv";
         make(path_in, problem);
     }
+
+    double time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
+    cout << "end at"
+         << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
+         << ENDL;
     /*
     cout << "debug start" << ENDL;
     int V = 100;

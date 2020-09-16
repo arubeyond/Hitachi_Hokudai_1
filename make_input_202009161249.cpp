@@ -39,7 +39,7 @@ const char ENDL = '\n';
 //cout << fixed << setprecision(17) << res << endl;
 const ll MOD = 998244353;
 
-bool debug = true;
+bool debug = false;
 
 const ll T = 10000;
 const ll MAX_V = 400;
@@ -154,45 +154,49 @@ void MAKE_TREE(int V, int E, vvii &edge, vector<pdd> coo, vector<int> col)
         used[v][u] = 0;
         cost_inv.erase(mp(u, v));
         cost.erase(w);
-
         rep(x, u)
         {
-            w = cost_inv[mp(x, u)];
-            cost.erase(w);
-            w *= (ld)(degree[u] + 1.0) / (ld)(degree[u]) * (ld)(1 + MAX_DIST * (degree[u] + 1 == MAX_Degree));
-            cost.insert(mp(w, mp(x, u)));
-            cost_inv[mp(x, u)] = w;
+            if (used[x][u])
+            {
+                w = cost_inv[mp(x, u)];
+                w *= (ld)(degree[u] + 1.0) / (ld)(degree[u]) * (ld)(1 + MAX_DIST * (degree[u] + 1 == MAX_Degree));
+                cost.insert(mp(w, mp(x, u)));
+                cost_inv[mp(x, u)] = w;
+            }
         }
         repf(x, u + 1, V)
         {
-            w = cost_inv[mp(u, x)];
-            cost.erase(w);
-            w *= (ld)(degree[u] + 1.0) / (ld)(degree[u]) * (ld)(1 + MAX_DIST * (degree[u] + 1 == MAX_Degree));
-            cost.insert(mp(w, mp(u, x)));
-            cost_inv[mp(u, x)] = w;
+            if (used[u][x])
+            {
+                w = cost_inv[mp(u, x)];
+                w *= (ld)(degree[u] + 1.0) / (ld)(degree[u]) * (ld)(1 + MAX_DIST * (degree[u] + 1 == MAX_Degree));
+                if (debug)
+                    cost.insert(mp(w, mp(u, x)));
+                cost_inv[mp(u, x)] = w;
+            }
         }
         rep(x, v)
         {
-            w = cost_inv[mp(x, v)];
-            cost.erase(w);
-            w *= (ld)(degree[v] + 1.0) / (ld)(degree[v]) * (ld)(1 + MAX_DIST * (degree[v] + 1 == MAX_Degree));
-            cost.insert(mp(w, mp(x, v)));
-            cost_inv[mp(x, v)] = w;
+            if (used[x][v])
+            {
+                w = cost_inv[mp(x, v)];
+                w *= (ld)(degree[v] + 1.0) / (ld)(degree[v]) * (ld)(1 + MAX_DIST * (degree[v] + 1 == MAX_Degree));
+                cost.insert(mp(w, mp(x, v)));
+                cost_inv[mp(x, v)] = w;
+            }
         }
         repf(x, v + 1, V)
         {
-            w = cost_inv[mp(v, x)];
-            cost.erase(w);
-            w *= (ld)(degree[v] + 1.0) / (ld)(degree[v]) * (ld)(1 + MAX_DIST * (degree[v] + 1 == MAX_Degree));
-            cost.insert(mp(w, mp(v, x)));
-            cost_inv[mp(v, x)] = w;
+            if (used[v][x])
+            {
+                w = cost_inv[mp(v, x)];
+                w *= (ld)(degree[v] + 1.0) / (ld)(degree[v]) * (ld)(1 + MAX_DIST * (degree[v] + 1 == MAX_Degree));
+                cost.insert(mp(w, mp(v, x)));
+                cost_inv[mp(v, x)] = w;
+            }
         }
         degree[u]++;
         degree[v]++;
-
-        if (debug){
-            cout << i << " ";
-        }
     }
 }
 
@@ -324,7 +328,7 @@ void make(string path, string problem)
             ofs << (Ord[t] >= 0) << endl;
             if (Ord[t] >= 0)
             {
-                ofs << ord_id << "," << Ord[t] + 1;
+                ofs << ord_id << "," << Ord[t] + 1 << endl;
                 ord_id++;
             }
         }
@@ -343,28 +347,42 @@ void make(string path, string problem)
     }
 }
 
-/*auto startClock = system_clock::now();
-
-const double time = duration_cast<microseconds>
-		(system_clock::now() - startClock).count() * 1e-6
-
-system_clock::now() が現在のクロック
-差.count()　でクロック数
-duration_cast<microseconds>　がマイクロ秒で変換
-*/
+string int_to_string(int i){
+    if (i==0)
+        return "00";
+    vector<char> moji;
+    while (i>0){
+        moji.push_back((char)(i%10 + (int)'0'));
+        i /= 10;
+    }
+    string ans = "";
+    repr(s, moji.size() - 1, -1) ans += moji[s];
+    if (ans.size()<2)
+        return "0" + ans;
+    return ans;
+}
 
 int main()
 {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
+
+    auto startClock = system_clock::now();
     const string path = "input_";
-    int n = 1;
+    int a, b;
+    a = 15;
+    b = 30;
     string problem = "A";
-    rep(i, n)
+    repf(i,a,b)
     {
-        string path_in = path + (char)(i + '0') + ".csv";
+        string path_in = path + int_to_string(i) + ".csv";
         make(path_in, problem);
     }
+
+    double time = duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6;
+        cout << "end at"
+             << duration_cast<microseconds>(system_clock::now() - startClock).count() * 1e-6
+             << ENDL;
     /*
     cout << "debug start" << ENDL;
     int V = 100;

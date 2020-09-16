@@ -154,45 +154,42 @@ void MAKE_TREE(int V, int E, vvii &edge, vector<pdd> coo, vector<int> col)
         used[v][u] = 0;
         cost_inv.erase(mp(u, v));
         cost.erase(w);
-
         rep(x, u)
         {
+            if (used[x][u]){
             w = cost_inv[mp(x, u)];
-            cost.erase(w);
             w *= (ld)(degree[u] + 1.0) / (ld)(degree[u]) * (ld)(1 + MAX_DIST * (degree[u] + 1 == MAX_Degree));
             cost.insert(mp(w, mp(x, u)));
-            cost_inv[mp(x, u)] = w;
+            cost_inv[mp(x, u)] = w;}
         }
         repf(x, u + 1, V)
         {
+            if (used[u][x]){
             w = cost_inv[mp(u, x)];
-            cost.erase(w);
             w *= (ld)(degree[u] + 1.0) / (ld)(degree[u]) * (ld)(1 + MAX_DIST * (degree[u] + 1 == MAX_Degree));
+            if (debug)
             cost.insert(mp(w, mp(u, x)));
-            cost_inv[mp(u, x)] = w;
+            cost_inv[mp(u, x)] = w;}
         }
         rep(x, v)
         {
+            if (used[x][v]){
             w = cost_inv[mp(x, v)];
-            cost.erase(w);
             w *= (ld)(degree[v] + 1.0) / (ld)(degree[v]) * (ld)(1 + MAX_DIST * (degree[v] + 1 == MAX_Degree));
             cost.insert(mp(w, mp(x, v)));
-            cost_inv[mp(x, v)] = w;
+            cost_inv[mp(x, v)] = w;}
         }
         repf(x, v + 1, V)
         {
+            if (used[v][x]){
             w = cost_inv[mp(v, x)];
-            cost.erase(w);
             w *= (ld)(degree[v] + 1.0) / (ld)(degree[v]) * (ld)(1 + MAX_DIST * (degree[v] + 1 == MAX_Degree));
             cost.insert(mp(w, mp(v, x)));
-            cost_inv[mp(v, x)] = w;
+            cost_inv[mp(v, x)] = w;}
         }
         degree[u]++;
         degree[v]++;
 
-        if (debug){
-            cout << i << " ";
-        }
     }
 }
 
@@ -321,8 +318,8 @@ void make(string path, string problem)
         int ord_id = 1;
         rep(t, T)
         {
-            ofs << (Ord[t] >= 0) << endl;
-            if (Ord[t] >= 0)
+            ofs << (Ord[t] > 0) << endl;
+            if (Ord[t] > 0)
             {
                 ofs << ord_id << "," << Ord[t] + 1;
                 ord_id++;
